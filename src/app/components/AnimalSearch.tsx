@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { obtenerRazas, obtenerDetalleAnimal, AnimalBreed, AnimalImageResponse } from '../services/animalApi';
+import { obtenerRazas, obtenerDetalleAnimal, AnimalBreed, AnimalImageResponse } from '@/services/animalApi';
 
 export default function AnimalSearch() {
   const [tipo, setTipo] = useState<'dogs' | 'cats'>('dogs');
@@ -13,6 +13,7 @@ export default function AnimalSearch() {
   const [errorRed, setErrorRed] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     async function cargar() {
       setCargandoRazas(true);
       setErrorRed(null);
@@ -20,14 +21,23 @@ export default function AnimalSearch() {
       setDetalle(null);
       try {
         const resultado = await obtenerRazas(tipo);
-        setRazas(resultado);
+        if (isMounted) {
+          setRazas(Array.isArray(resultado) ? resultado : []);
+        }
       } catch (err) {
-        setErrorRed('No se pudieron cargar las razas. Verifique su conexión.');
+        if (isMounted) {
+          setErrorRed('No se pudieron cargar las razas. Verifique su conexión.');
+        }
       } finally {
-        setCargandoRazas(false);
+        if (isMounted) {
+          setCargandoRazas(false);
+        }
       }
     }
     cargar();
+    return () => {
+      isMounted = false;
+    };
   }, [tipo]);
 
   const handleBuscar = async () => {
