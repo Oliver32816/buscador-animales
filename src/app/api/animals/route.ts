@@ -14,32 +14,29 @@ export async function GET(request: Request) {
   };
 
   try {
-    let url = '';
     if (breedId) {
-      const base = tipo === 'cats'
-        ? 'https://api.thecatapi.com/v1/images/search'
-        : 'https://api.thedogapi.com/v1/images/search';
-      url = `${base}?breed_ids=${breedId}&api_key=${apiKey}`;
+      const url = tipo === 'cats'
+        ? `https://api.thecatapi.com/v1/images/search?breed_ids=${breedId}`
+        : `https://api.thedogapi.com/v1/images/search?breed_ids=${breedId}`;
+      
+      const respuesta = await fetch(url, { headers });
+      if (!respuesta.ok) throw new Error('Fallo al conectar con la API externa');
+      
+      const data = await respuesta.json();
+      return NextResponse.json(data);
     } else {
-      const base = tipo === 'cats'
+      const url = tipo === 'cats'
         ? 'https://api.thecatapi.com/v1/breeds'
         : 'https://api.thedogapi.com/v1/breeds';
-      url = `${base}?api_key=${apiKey}`;
+      
+      const respuesta = await fetch(url, { headers });
+      if (!respuesta.ok) throw new Error('Fallo al listar razas desde la API externa');
+      
+      const data = await respuesta.json();
+      return NextResponse.json(Array.isArray(data) ? data : []);
     }
-
-    const respuesta = await fetch(url, { headers });
-    
-    if (!respuesta.ok) {
-      const errorText = await respuesta.text();
-      console.error(`Error externo (${respuesta.status}):`, errorText);
-      throw new Error(`API Externa respondió con estado ${respuesta.status}`);
-    }
-
-    const data = await respuesta.json();
-    return NextResponse.json(Array.isArray(data) ? data : []);
-
   } catch (error) {
-    console.error('Error detallado en el proxy:', error);
+    console.error('Error en la API proxy:', error);
     return NextResponse.json({ error: 'Error al consultar la API oficial' }, { status: 500 });
   }
 }
