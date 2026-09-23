@@ -1,20 +1,20 @@
 import { NextResponse } from 'next/server';
 
-// PEGA AQUÍ TU API KEY REAL QUE TE LLEGÓ AL CORREO (ej: live_xxxxxxxx...)
-const API_KEY = 'live_aded9hc0tAHDb0EQnuVzz5JNR4MkfFsyr6dADgGtkTxJ3k36wTZ7DqlVCgkHRLS1'; 
+const DOG_API_KEY = 'live_aded9hc0tAHDb0EQnuVzz5JNR4MkfFsyr6dADgGtkTxJ3k36wTZ7DqlVCgkHRLS1'; // Tu llave de The Dog API
+const CAT_API_KEY = 'live_aded9hc0tAHDb0EQnuVzz5JNR4MkfFsyr6dADgGtkTxJ3k36wTZ7DqlVCgkHRLS1; // Tu llave de The Cat API (puedes usar la misma si te sirve, o dejarla abierta con cabecera estándar)
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const tipo = searchParams.get('tipo');
   const breedId = searchParams.get('breedId');
 
+  const apiKey = tipo === 'cats' ? CAT_API_KEY : DOG_API_KEY;
   const headers: Record<string, string> = {
-    'x-api-key': API_KEY
+    'x-api-key': apiKey
   };
 
   try {
     if (breedId) {
-      // Petición real oficial para el detalle de la raza y su imagen
       const url = tipo === 'cats'
         ? `https://api.thecatapi.com/v1/images/search?breed_ids=${breedId}`
         : `https://api.thedogapi.com/v1/images/search?breed_ids=${breedId}`;
@@ -25,7 +25,6 @@ export async function GET(request: Request) {
       const data = await respuesta.json();
       return NextResponse.json(data);
     } else {
-      // Petición real oficial para listar todas las razas del mundo
       const url = tipo === 'cats'
         ? 'https://api.thecatapi.com/v1/breeds'
         : 'https://api.thedogapi.com/v1/breeds';
