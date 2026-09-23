@@ -3,19 +3,57 @@
 import { useState, useEffect } from 'react';
 
 const FALLBACK_DOGS = [
-  { id: 'labrador', name: 'Labrador Retriever' },
-  { id: 'german_shepherd', name: 'Pastor Alemán' },
-  { id: 'golden', name: 'Golden Retriever' },
-  { id: 'french_bulldog', name: 'Bulldog Francés' },
-  { id: 'beagle', name: 'Beagle' }
+  { 
+    id: 'labrador', 
+    name: 'Labrador Retriever', 
+    temperament: 'Amigable, activo, extrovertido', 
+    origin: 'Canadá, Reino Unido', 
+    life_span: '10 - 12 años',
+    image: { url: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1' }
+  },
+  { 
+    id: 'german_shepherd', 
+    name: 'Pastor Alemán', 
+    temperament: 'Alerta, obediente, confidente, inteligente', 
+    origin: 'Alemania', 
+    life_span: '7 - 10 años',
+    image: { url: 'https://images.unsplash.com/photo-1589941013453-ec89f33b5e95' }
+  },
+  { 
+    id: 'golden', 
+    name: 'Golden Retriever', 
+    temperament: 'Inteligente, bondadoso, confiable, amable', 
+    origin: 'Reino Unido', 
+    life_span: '10 - 12 años',
+    image: { url: 'https://images.unsplash.com/photo-1552053831-71594a27632d' }
+  }
 ];
 
 const FALLBACK_CATS = [
-  { id: 'siamese', name: 'Siamés' },
-  { id: 'persian', name: 'Persa' },
-  { id: 'maine_coon', name: 'Maine Coon' },
-  { id: 'bengal', name: 'Bengalí' },
-  { id: 'sphynx', name: 'Sphynx' }
+  { 
+    id: 'siamese', 
+    name: 'Siamés', 
+    temperament: 'Activo, ágil, sociable, vocal, inteligente', 
+    origin: 'Tailandia', 
+    life_span: '12 - 15 años',
+    image: { url: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba' }
+  },
+  { 
+    id: 'persian', 
+    name: 'Persa', 
+    temperament: 'Cariñoso, tranquilo, pacífico, quieto', 
+    origin: 'Irán (Persia)', 
+    life_span: '10 - 17 años',
+    image: { url: 'https://images.unsplash.com/photo-1574158622682-e40e69881006' }
+  },
+  { 
+    id: 'bengal', 
+    name: 'Bengalí', 
+    temperament: 'Alerta, ágil, independiente, curioso, amigable', 
+    origin: 'Estados Unidos', 
+    life_span: '12 - 15 años',
+    image: { url: 'https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8' }
+  }
 ];
 
 const API_KEY = 'live_aded9hc0tAhDB0EqnuVz5JNR4Mkffsyr6dADgGtKxJ3k36wTZ7dQlVCgkHRLS1';
@@ -61,39 +99,28 @@ export default function AnimalSearch() {
     cargarRazas();
   }, [tipo]);
 
-  const obtenerDetalle = async () => {
+  const obtenerDetalle = () => {
     if (!breedId) return;
     setLoading(true);
-    setDetalle(null);
 
-    try {
-      const url = tipo === 'cats'
-        ? `https://api.thecatapi.com/v1/images/search?breed_ids=${breedId}`
-        : `https://api.thedogapi.com/v1/images/search?breed_ids=${breedId}`;
+    // Buscamos directamente la raza seleccionada dentro del arreglo local que ya contiene toda la info
+    const razaEncontrada = razas.find((r) => r.id === breedId);
 
-      const res = await fetch(url, {
-        headers: { 'x-api-key': API_KEY }
-      });
-
-      if (!res.ok) throw new Error('Error al obtener detalle');
-
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        setDetalle(data[0]);
-      } else {
-        setDetalle({
-          url: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1',
-          breeds: [{ name: 'Mascota Seleccionada', temperament: 'Amigable, activo', origin: 'Desconocido', life_span: '10 - 15 años' }]
-        });
-      }
-    } catch (error) {
+    if (razaEncontrada) {
       setDetalle({
-        url: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1',
-        breeds: [{ name: 'Mascota Local', temperament: 'Juguetón, Amigable', origin: 'Internacional', life_span: '12 años' }]
+        url: razaEncontrada.image?.url || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1',
+        breeds: [
+          {
+            name: razaEncontrada.name || 'Mascota',
+            temperament: razaEncontrada.temperament || 'No especificado',
+            origin: razaEncontrada.origin || 'Desconocido',
+            life_span: razaEncontrada.life_span || '10 - 15 años'
+          }
+        ]
       });
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   return (
@@ -134,7 +161,7 @@ export default function AnimalSearch() {
           disabled={!breedId || loading}
           className="px-6 py-3 bg-slate-800 text-white font-semibold rounded-lg hover:bg-slate-700 disabled:opacity-50 transition-all"
         >
-          {loading ? 'Buscando...' : 'Ver información'}
+          Ver información
         </button>
       </div>
 
@@ -151,9 +178,9 @@ export default function AnimalSearch() {
             <h3 className="text-xl font-bold text-gray-900">
               {detalle.breeds?.[0]?.name || 'Información de la raza'}
             </h3>
-            <p><strong>Temperamento:</strong> {detalle.breeds?.[0]?.temperament || 'No especificado'}</p>
-            <p><strong>Origen:</strong> {detalle.breeds?.[0]?.origin || 'Desconocido'}</p>
-            <p><strong>Esperanza de vida:</strong> {detalle.breeds?.[0]?.life_span || 'N/A'}</p>
+            <p><strong>Temperamento:</strong> {detalle.breeds?.[0]?.temperament}</p>
+            <p><strong>Origen:</strong> {detalle.breeds?.[0]?.origin}</p>
+            <p><strong>Esperanza de vida:</strong> {detalle.breeds?.[0]?.life_span}</p>
           </div>
         </div>
       )}
