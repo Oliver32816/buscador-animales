@@ -1,4 +1,4 @@
-import AnimalSearch from '../components/AnimalSearch';
+import AnimalSearch from './components/AnimalSearch';
 
 export default function Home() {
   return (
