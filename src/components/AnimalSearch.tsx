@@ -1,146 +1,120 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { obtenerRazas, obtenerDetalleAnimal, AnimalBreed, AnimalImageResponse } from '@/services/animalApi';
 
 export default function AnimalSearch() {
   const [tipo, setTipo] = useState<'dogs' | 'cats'>('dogs');
-  const [razas, setRazas] = useState<AnimalBreed[]>([]);
-  const [razaSeleccionada, setRazaSeleccionada] = useState<string>('');
-  const [detalle, setDetalle] = useState<AnimalImageResponse | null>(null);
-  const [cargandoRazas, setCargandoRazas] = useState<boolean>(false);
-  const [cargandoDetalle, setCargandoDetalle] = useState<boolean>(false);
-  const [errorRed, setErrorRed] = useState<string | null>(null);
+  const [razas, setRazas] = useState<any[]>([]);
+  const [breedId, setBreedId] = useState('');
+  const [detalle, setDetalle] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
+  // Cargar lista de razas desde nuestra propia API route (proxy)
   useEffect(() => {
-    let isMounted = true;
-    async function cargar() {
-      setCargandoRazas(true);
-      setErrorRed(null);
-      setRazaSeleccionada('');
+    async function cargarRazas() {
+      setLoading(true);
+      setRazas([]);
+      setBreedId('');
       setDetalle(null);
+
       try {
-        const resultado = await obtenerRazas(tipo);
-        if (isMounted) {
-          setRazas(Array.isArray(resultado) ? resultado : []);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setErrorRed('No se pudieron cargar las razas. Verifique su conexión.');
-        }
+        const res = await fetch(`/api/animals?tipo=${tipo}`);
+        if (!res.ok) throw new Error('Error al conectar con el servidor proxy');
+        
+        const data = await res.json();
+        setRazas(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('Error al cargar razas:', error);
       } finally {
-        if (isMounted) {
-          setCargandoRazas(false);
-        }
+        setLoading(false);
       }
     }
-    cargar();
-    return () => {
-      isMounted = false;
-    };
+
+    cargarRazas();
   }, [tipo]);
 
-  const handleBuscar = async () => {
-    if (!razaSeleccionada) return;
-    setCargandoDetalle(true);
-    setErrorRed(null);
+  // Cargar detalle de la raza seleccionada
+  const obtenerDetalle = async () => {
+    if (!breedId) return;
+    setLoading(true);
+    setDetalle(null);
+
     try {
-      const resultado = await obtenerDetalleAnimal(tipo, razaSeleccionada);
-      setDetalle(resultado);
-    } catch (err) {
-      setErrorRed('Error al obtener la información de la mascota.');
+      const res = await fetch(`/api/animals?tipo=${tipo}&breedId=${breedId}`);
+      if (!res.ok) throw new Error('Error al obtener los detalles');
+      
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        setDetalle(data[0]);
+      }
+    } catch (error) {
+      console.error('Error al obtener detalle:', error);
     } finally {
-      setCargandoDetalle(false);
+      setLoading(false);
     }
   };
 
-  const breedInfo = detalle?.breeds?.[0];
-
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white rounded-2xl shadow-xl border border-slate-100">
-      {/* Pestañas de Navegación UI */}
-      <div className="flex justify-center gap-4 mb-8">
+    <div className="max-w-2xl mx-auto p-6 bg-white rounded-xl shadow-lg mt-10">
+      <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Buscador Oficial de Mascotas</h2>
+      
+      {/* Botones de selección */}
+      <div className="flex justify-center gap-4 mb-6">
         <button
           onClick={() => setTipo('dogs')}
-          className={`px-6 py-2.5 rounded-full font-semibold transition-all cursor-pointer ${
-            tipo === 'dogs'
-              ? 'bg-indigo-600 text-white shadow-md'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-          }`}
+          className={`px-6 py-2 rounded-lg font-semibold transition-all ${tipo === 'dogs' ? 'bg-amber-600 text-white' : 'bg-gray-200 text-gray-700'}`}
         >
-          🐶 Perros
+          Perros
         </button>
         <button
           onClick={() => setTipo('cats')}
-          className={`px-6 py-2.5 rounded-full font-semibold transition-all cursor-pointer ${
-            tipo === 'cats'
-              ? 'bg-indigo-600 text-white shadow-md'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-          }`}
+          className={`px-6 py-2 rounded-lg font-semibold transition-all ${tipo === 'cats' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
         >
-          🐱 Gatos
+          Gatos
         </button>
       </div>
 
-      {/* Control de Errores de Red */}
-      {errorRed && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm text-center">
-          {errorRed}
-        </div>
-      )}
-
-      {/* Selector y Botón */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-8 items-center">
+      {/* Menú desplegable */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <select
-          value={razaSeleccionada}
-          onChange={(e) => setRazaSeleccionada(e.target.value)}
-          disabled={cargandoRazas}
-          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-3 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          value={breedId}
+          onChange={(e) => setBreedId(e.target.value)}
+          className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white text-gray-800"
         >
-          <option value="">
-            {cargandoRazas ? 'Cargando razas...' : '-- Selecciona una raza --'}
-          </option>
-          {razas.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
+          <option value="">{loading ? 'Cargando razas...' : '-- Selecciona una raza --'}</option>
+          {razas.map((raza) => (
+            <option key={raza.id} value={raza.id}>
+              {raza.name}
             </option>
           ))}
         </select>
+
         <button
-          onClick={handleBuscar}
-          disabled={!razaSeleccionada || cargandoDetalle}
-          className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-medium px-8 py-3 rounded-lg transition-colors shadow-sm cursor-pointer whitespace-nowrap"
+          onClick={obtenerDetalle}
+          disabled={!breedId || loading}
+          className="px-6 py-3 bg-slate-800 text-white font-semibold rounded-lg hover:bg-slate-700 disabled:opacity-50 transition-all"
         >
-          {cargandoDetalle ? 'Buscando...' : 'Ver Información'}
+          {loading ? 'Buscando...' : 'Ver información'}
         </button>
       </div>
 
-      {/* Resultado con Retroalimentación Visual */}
-      {detalle && breedInfo && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-xl border border-slate-200 items-center animate-fadeIn">
-          <div className="h-64 sm:h-72 w-full rounded-lg overflow-hidden shadow-inner bg-slate-200">
+      {/* Resultados */}
+      {detalle && (
+        <div className="border border-gray-200 rounded-xl p-5 bg-gray-50 flex flex-col md:flex-row gap-6 items-center">
+          {detalle.url && (
             <img
               src={detalle.url}
-              alt={breedInfo.name}
-              className="w-full h-full object-cover"
+              alt="Mascota"
+              className="w-48 h-48 object-cover rounded-lg shadow-md"
             />
-          </div>
-          <div className="space-y-3">
-            <h2 className="text-2xl font-bold text-slate-900">{breedInfo.name}</h2>
-            <p className="text-sm text-slate-600">
-              <strong className="text-slate-800">Temperamento:</strong> {breedInfo.temperament || 'No especificado'}
-            </p>
-            <p className="text-sm text-slate-600">
-              <strong className="text-slate-800">Origen:</strong> {breedInfo.origin || 'Desconocido'}
-            </p>
-            <p className="text-sm text-slate-600">
-              <strong className="text-slate-800">Esperanza de vida:</strong> {breedInfo.life_span || 'No especificada'}
-            </p>
-            {breedInfo.bred_for && (
-              <p className="text-sm text-slate-600">
-                <strong className="text-slate-800">Criado para:</strong> {breedInfo.bred_for}
-              </p>
-            )}
+          )}
+          <div className="flex-1 text-gray-700 space-y-2">
+            <h3 className="text-xl font-bold text-gray-900">
+              {detalle.breeds?.[0]?.name || 'Información de la raza'}
+            </h3>
+            <p><strong>Temperamento:</strong> {detalle.breeds?.[0]?.temperament || 'No especificado'}</p>
+            <p><strong>Origen:</strong> {detalle.breeds?.[0]?.origin || 'Desconocido'}</p>
+            <p><strong>Esperanza de vida:</strong> {detalle.breeds?.[0]?.life_span || 'N/A'}</p>
           </div>
         </div>
       )}
