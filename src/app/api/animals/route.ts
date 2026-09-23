@@ -14,34 +14,32 @@ export async function GET(request: Request) {
   };
 
   try {
+    let url = '';
     if (breedId) {
-      // Incluimos la api_key tanto en cabecera como en parámetro URL por seguridad
-      const baseUrl = tipo === 'cats'
-        ? `https://api.thecatapi.com/v1/images/search?breed_ids=${breedId}`
-        : `https://api.thedogapi.com/v1/images/search?breed_ids=${breedId}`;
-      
-      const url = `${baseUrl}&api_key=${apiKey}`;
-      
-      const respuesta = await fetch(url, { headers });
-      if (!respuesta.ok) throw new Error('Fallo al conectar con la API externa');
-      
-      const data = await respuesta.json();
-      return NextResponse.json(data);
+      const base = tipo === 'cats'
+        ? 'https://api.thecatapi.com/v1/images/search'
+        : 'https://api.thedogapi.com/v1/images/search';
+      url = `${base}?breed_ids=${breedId}&api_key=${apiKey}`;
     } else {
-      const baseUrl = tipo === 'cats'
+      const base = tipo === 'cats'
         ? 'https://api.thecatapi.com/v1/breeds'
         : 'https://api.thedogapi.com/v1/breeds';
-      
-      const url = `${baseUrl}?api_key=${apiKey}`;
-      
-      const respuesta = await fetch(url, { headers });
-      if (!respuesta.ok) throw new Error('Fallo al listar razas desde la API externa');
-      
-      const data = await respuesta.json();
-      return NextResponse.json(Array.isArray(data) ? data : []);
+      url = `${base}?api_key=${apiKey}`;
     }
+
+    const respuesta = await fetch(url, { headers });
+    
+    if (!respuesta.ok) {
+      const errorText = await respuesta.text();
+      console.error(`Error externo (${respuesta.status}):`, errorText);
+      throw new Error(`API Externa respondió con estado ${respuesta.status}`);
+    }
+
+    const data = await respuesta.json();
+    return NextResponse.json(Array.isArray(data) ? data : []);
+
   } catch (error) {
-    console.error('Error en la API proxy:', error);
+    console.error('Error detallado en el proxy:', error);
     return NextResponse.json({ error: 'Error al consultar la API oficial' }, { status: 500 });
   }
 }
