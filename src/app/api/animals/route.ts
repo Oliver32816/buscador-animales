@@ -15,9 +15,12 @@ export async function GET(request: Request) {
 
   try {
     if (breedId) {
-      const url = tipo === 'cats'
+      // Incluimos la api_key tanto en cabecera como en parámetro URL por seguridad
+      const baseUrl = tipo === 'cats'
         ? `https://api.thecatapi.com/v1/images/search?breed_ids=${breedId}`
         : `https://api.thedogapi.com/v1/images/search?breed_ids=${breedId}`;
+      
+      const url = `${baseUrl}&api_key=${apiKey}`;
       
       const respuesta = await fetch(url, { headers });
       if (!respuesta.ok) throw new Error('Fallo al conectar con la API externa');
@@ -25,9 +28,11 @@ export async function GET(request: Request) {
       const data = await respuesta.json();
       return NextResponse.json(data);
     } else {
-      const url = tipo === 'cats'
+      const baseUrl = tipo === 'cats'
         ? 'https://api.thecatapi.com/v1/breeds'
         : 'https://api.thedogapi.com/v1/breeds';
+      
+      const url = `${baseUrl}?api_key=${apiKey}`;
       
       const respuesta = await fetch(url, { headers });
       if (!respuesta.ok) throw new Error('Fallo al listar razas desde la API externa');
