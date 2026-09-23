@@ -14,29 +14,32 @@ export async function GET(request: Request) {
   };
 
   try {
+    let url = '';
     if (breedId) {
-      const url = tipo === 'cats'
-        ? `https://api.thecatapi.com/v1/images/search?breed_ids=${breedId}`
-        : `https://api.thedogapi.com/v1/images/search?breed_ids=${breedId}`;
-      
-      const respuesta = await fetch(url, { headers });
-      if (!respuesta.ok) throw new Error('Fallo al conectar con la API externa');
-      
-      const data = await respuesta.json();
-      return NextResponse.json(data);
+      const base = tipo === 'cats'
+        ? 'https://api.thecatapi.com/v1/images/search'
+        : 'https://api.thedogapi.com/v1/images/search';
+      url = `${base}?breed_ids=${breedId}`;
     } else {
-      const url = tipo === 'cats'
+      url = tipo === 'cats'
         ? 'https://api.thecatapi.com/v1/breeds'
-        : 'https://api.thedogapi.com/v1/breeds';
-      
-      const respuesta = await fetch(url, { headers });
-      if (!respuesta.ok) throw new Error('Fallo al listar razas desde la API externa');
-      
-      const data = await respuesta.json();
-      return NextResponse.json(Array.isArray(data) ? data : []);
+        : 'https://thedogapi.com/v1/breeds';
     }
+
+    console.log(`[PROXY] Consultando URL externa: ${url} para tipo: ${tipo}`);
+    
+    const respuesta = await fetch(url, { headers });
+    
+    if (!respuesta.ok) {
+      const errText = await respuesta.text();
+      console.error(`[PROXY ERROR] La API externa respondió ${respuesta.status}:`, errText);
+      return NextResponse.json({ error: `API externa falló con estado ${respuesta.status}` }, { status: respuesta.status });
+    }
+
+    const data = await respuesta.json();
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Error en la API proxy:', error);
-    return NextResponse.json({ error: 'Error al consultar la API oficial' }, { status: 500 });
+    console.error('[PROXY EXCEPTION]:', error);
+    return NextResponse.json({ error: 'Error interno en el servidor proxy' }, { status: 500 });
   }
 }

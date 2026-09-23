@@ -9,7 +9,6 @@ export default function AnimalSearch() {
   const [detalle, setDetalle] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  // Cargar lista de razas desde nuestra propia API route (proxy)
   useEffect(() => {
     async function cargarRazas() {
       setLoading(true);
@@ -18,13 +17,18 @@ export default function AnimalSearch() {
       setDetalle(null);
 
       try {
+        console.log(`[CLIENTE] Solicitando razas para: ${tipo}`);
         const res = await fetch(`/api/animals?tipo=${tipo}`);
-        if (!res.ok) throw new Error('Error al conectar con el servidor proxy');
         
+        if (!res.ok) {
+          throw new Error(`Error HTTP: ${res.status}`);
+        }
+
         const data = await res.json();
+        console.log(`[CLIENTE] Razas recibidas exitosamente:`, data.length);
         setRazas(Array.isArray(data) ? data : []);
       } catch (error) {
-        console.error('Error al cargar razas:', error);
+        console.error('[CLIENTE ERROR] Fallo al cargar razas:', error);
       } finally {
         setLoading(false);
       }
@@ -33,7 +37,6 @@ export default function AnimalSearch() {
     cargarRazas();
   }, [tipo]);
 
-  // Cargar detalle de la raza seleccionada
   const obtenerDetalle = async () => {
     if (!breedId) return;
     setLoading(true);
@@ -58,7 +61,6 @@ export default function AnimalSearch() {
     <div className="max-w-2xl mx-auto p-6 bg-white rounded-xl shadow-lg mt-10">
       <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Buscador Oficial de Mascotas</h2>
       
-      {/* Botones de selección */}
       <div className="flex justify-center gap-4 mb-6">
         <button
           onClick={() => setTipo('dogs')}
@@ -74,7 +76,6 @@ export default function AnimalSearch() {
         </button>
       </div>
 
-      {/* Menú desplegable */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <select
           value={breedId}
@@ -98,7 +99,6 @@ export default function AnimalSearch() {
         </button>
       </div>
 
-      {/* Resultados */}
       {detalle && (
         <div className="border border-gray-200 rounded-xl p-5 bg-gray-50 flex flex-col md:flex-row gap-6 items-center">
           {detalle.url && (
