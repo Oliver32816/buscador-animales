@@ -1,83 +1,43 @@
 import { NextResponse } from 'next/server';
 
-// Datos de respaldo estáticos por si la API externa falla o está caída
-const fallbackPerros = [
-  { id: 'labrador', name: 'Labrador Retriever' },
-  { id: 'german_shepherd', name: 'Pastor Alemán' },
-  { id: 'golden', name: 'Golden Retriever' },
-  { id: 'bulldog', name: 'Bulldog' },
-  { id: 'poodle', name: 'Poodle (Caniche)' },
-  { id: 'beagle', name: 'Beagle' },
-  { id: 'chihuahua', name: 'Chihuahua' },
-  { id: 'husky', name: 'Husky Siberiano' },
-  { id: 'boxer', name: 'Boxer' },
-  { id: 'rottweiler', name: 'Rottweiler' }
-];
-
-const fallbackGatos = [
-  { id: 'persian', name: 'Persa' },
-  { id: 'siamese', name: 'Siamés' },
-  { id: 'maine_coon', name: 'Maine Coon' },
-  { id: 'sphynx', name: 'Esfinge (Sphynx)' },
-  { id: 'bengal', name: 'Bengalí' },
-  { id: 'british_shorthair', name: 'Británico de Pelo Corto' },
-  { id: 'ragdoll', name: 'Ragdoll' },
-  { id: 'scottish_fold', name: 'Scottish Fold' }
-];
+// PEGA AQUÍ TU API KEY REAL QUE TE LLEGÓ AL CORREO (ej: live_xxxxxxxx...)
+const API_KEY = 'live_aded9hc0tAHDb0EQnuVzz5JNR4MkfFsyr6dADgGtkTxJ3k36wTZ7DqlVCgkHRLS1'; 
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const tipo = searchParams.get('tipo');
   const breedId = searchParams.get('breedId');
 
+  const headers: Record<string, string> = {
+    'x-api-key': API_KEY
+  };
+
   try {
     if (breedId) {
-      // Petición de detalle con respaldo de imagen genérica si falla
+      // Petición real oficial para el detalle de la raza y su imagen
       const url = tipo === 'cats'
         ? `https://api.thecatapi.com/v1/images/search?breed_ids=${breedId}`
         : `https://api.thedogapi.com/v1/images/search?breed_ids=${breedId}`;
       
-      const respuestaExterna = await fetch(url);
-      if (respuestaExterna.ok) {
-        const data = await respuestaExterna.json();
-        if (Array.isArray(data) && data.length > 0) {
-          return NextResponse.json(data);
-        }
-      }
-
-      // Respaldo de detalle si la API externa falla
-      return NextResponse.json([{
-        url: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=600&q=80',
-        breeds: [{
-          id: breedId,
-          name: 'Raza Seleccionada (Modo Respaldo)',
-          temperament: 'Amigable, enérgico, cariñoso y juguetón.',
-          origin: 'Internacional',
-          life_span: '10 - 15 años',
-          bred_for: 'Compañía'
-        }]
-      }]);
-
+      const respuesta = await fetch(url, { headers });
+      if (!respuesta.ok) throw new Error('Fallo al conectar con la API externa');
+      
+      const data = await respuesta.json();
+      return NextResponse.json(data);
     } else {
-      // Petición de lista de razas
+      // Petición real oficial para listar todas las razas del mundo
       const url = tipo === 'cats'
         ? 'https://api.thecatapi.com/v1/breeds'
         : 'https://api.thedogapi.com/v1/breeds';
       
-      const respuestaExterna = await fetch(url);
-      if (respuestaExterna.ok) {
-        const data = await respuestaExterna.json();
-        if (Array.isArray(data) && data.length > 0) {
-          return NextResponse.json(data);
-        }
-      }
-
-      // Si la API externa falla, devolvemos nuestro respaldo garantizado
-      return NextResponse.json(tipo === 'cats' ? fallbackGatos : fallbackPerros);
+      const respuesta = await fetch(url, { headers });
+      if (!respuesta.ok) throw new Error('Fallo al listar razas desde la API externa');
+      
+      const data = await respuesta.json();
+      return NextResponse.json(Array.isArray(data) ? data : []);
     }
   } catch (error) {
-    console.error('Error en /api/animals (usando respaldo):', error);
-    // En caso de excepción de red total, retornamos los datos locales
-    return NextResponse.json(tipo === 'cats' ? fallbackGatos : fallbackPerros);
+    console.error('Error en la API proxy:', error);
+    return NextResponse.json({ error: 'Error al consultar la API oficial' }, { status: 500 });
   }
 }
