@@ -23,23 +23,21 @@ export async function GET(request: Request) {
     } else {
       url = tipo === 'cats'
         ? 'https://api.thecatapi.com/v1/breeds'
-        : 'https://thedogapi.com/v1/breeds';
+        : 'https://api.thedogapi.com/v1/breeds'; // <--- Aquí estaba el detalle que faltaba el 'api.'
     }
 
-    console.log(`[PROXY] Consultando URL externa: ${url} para tipo: ${tipo}`);
-    
     const respuesta = await fetch(url, { headers });
     
     if (!respuesta.ok) {
       const errText = await respuesta.text();
-      console.error(`[PROXY ERROR] La API externa respondió ${respuesta.status}:`, errText);
-      return NextResponse.json({ error: `API externa falló con estado ${respuesta.status}` }, { status: respuesta.status });
+      console.error(`Error externo (${respuesta.status}):`, errText);
+      return NextResponse.json({ error: 'Fallo al conectar con la API externa' }, { status: respuesta.status });
     }
 
     const data = await respuesta.json();
-    return NextResponse.json(data);
+    return NextResponse.json(Array.isArray(data) ? data : []);
   } catch (error) {
-    console.error('[PROXY EXCEPTION]:', error);
-    return NextResponse.json({ error: 'Error interno en el servidor proxy' }, { status: 500 });
+    console.error('Error en el proxy:', error);
+    return NextResponse.json({ error: 'Error interno en el servidor' }, { status: 500 });
   }
 }
