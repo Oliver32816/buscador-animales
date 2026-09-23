@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 
-// Datos de respaldo por si la API externa bloquea la conexión
 const FALLBACK_DOGS = [
   { id: 'labrador', name: 'Labrador Retriever' },
   { id: 'german_shepherd', name: 'Pastor Alemán' },
@@ -44,17 +43,15 @@ export default function AnimalSearch() {
           headers: { 'x-api-key': API_KEY }
         });
 
-        if (!res.ok) throw new Error('API bloqueada o sin respuesta');
+        if (!res.ok) throw new Error('API bloqueada');
 
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
           setRazas(data);
         } else {
-          throw new Error('Datos vacíos');
+          setRazas(tipo === 'cats' ? FALLBACK_CATS : FALLBACK_DOGS);
         }
       } catch (error) {
-        console.warn('Usando catálogo de respaldo local debido a restricción de API:', error);
-        // Respaldo automático para evitar que la interfaz trone
         setRazas(tipo === 'cats' ? FALLBACK_CATS : FALLBACK_DOGS);
       } finally {
         setLoading(false);
@@ -86,11 +83,10 @@ export default function AnimalSearch() {
       } else {
         setDetalle({
           url: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1',
-          breeds: [{ name: 'Mascota Seleccionada', temperament: amigable(tipo), origin: 'Desconocido', life_span: '10 - 15 años' }]
+          breeds: [{ name: 'Mascota Seleccionada', temperament: 'Amigable, activo', origin: 'Desconocido', life_span: '10 - 15 años' }]
         });
       }
     } catch (error) {
-      console.warn('Usando detalle de respaldo local');
       setDetalle({
         url: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1',
         breeds: [{ name: 'Mascota Local', temperament: 'Juguetón, Amigable', origin: 'Internacional', life_span: '12 años' }]
@@ -99,10 +95,6 @@ export default function AnimalSearch() {
       setLoading(false);
     }
   };
-
-  function amigable(t: string) {
-    return t === 'cats' ? 'Independiente, curioso, tranquilo' : 'Leal, enérgico, cariñoso';
-  }
 
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white rounded-xl shadow-lg mt-10">
