@@ -13,14 +13,11 @@ export interface AnimalImageResponse {
 }
 
 export async function obtenerRazas(tipo: 'dogs' | 'cats'): Promise<AnimalBreed[]> {
-  const url = tipo === 'dogs' 
-    ? 'https://api.thedogapi.com/v1/breeds' 
-    : 'https://api.thecatapi.com/v1/breeds';
-
   try {
-    const respuesta = await fetch(url);
-    if (!respuesta.ok) throw new Error('Error al conectar con la API');
-    return await respuesta.json();
+    const respuesta = await fetch(`/api/animals?tipo=${tipo}`);
+    if (!respuesta.ok) throw new Error('Error al conectar con el servidor');
+    const datos = await respuesta.json();
+    return Array.isArray(datos) ? datos : [];
   } catch (error) {
     console.error("Error en obtenerRazas:", error);
     return [];
@@ -28,12 +25,8 @@ export async function obtenerRazas(tipo: 'dogs' | 'cats'): Promise<AnimalBreed[]
 }
 
 export async function obtenerDetalleAnimal(tipo: 'dogs' | 'cats', breedId: string): Promise<AnimalImageResponse | null> {
-  const url = tipo === 'dogs'
-    ? `https://api.thedogapi.com/v1/images/search?breed_ids=${breedId}`
-    : `https://api.thecatapi.com/v1/images/search?breed_ids=${breedId}`;
-
   try {
-    const respuesta = await fetch(url);
+    const respuesta = await fetch(`/api/animals?tipo=${tipo}&breedId=${breedId}`);
     if (!respuesta.ok) throw new Error('Error al obtener los detalles');
     const datos: AnimalImageResponse[] = await respuesta.json();
     return datos.length > 0 ? datos[0] : null;
