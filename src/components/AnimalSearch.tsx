@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 
+// Llaves separadas para evitar bloqueos de autenticación cruzada entre APIs
 const DOG_API_KEY = 'live_aded9hc0tAhDB0EqnuVz5JNR4Mkffsyr6dADgGtKxJ3k36wTZ7dQlVCgkHRLS1';
-const CAT_API_KEY = 'live_aded9hc0tAhDB0EqnuVz5JNR4Mkffsyr6dADgGtKxJ3k36wTZ7dQlVCgkHRLS1';
+const CAT_API_KEY = ''; // Dejar vacío o usar clave propia de The Cat API si se cuenta con ella
 
 export default function AnimalSearch() {
   const [tipo, setTipo] = useState<'dogs' | 'cats'>('dogs');
@@ -12,7 +13,7 @@ export default function AnimalSearch() {
   const [detalle, setDetalle] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  // Consumir la API oficial en tiempo real para obtener TODAS las razas
+  // Carga dinámica de todas las razas oficiales al cambiar de pestaña
   useEffect(() => {
     async function cargarRazasOficiales() {
       setLoading(true);
@@ -26,21 +27,22 @@ export default function AnimalSearch() {
           : 'https://api.thedogapi.com/v1/breeds';
 
         const apiKey = tipo === 'cats' ? CAT_API_KEY : DOG_API_KEY;
+        const headers: HeadersInit = {};
+        if (apiKey) {
+          headers['x-api-key'] = apiKey;
+        }
 
-        const res = await fetch(url, {
-          headers: {
-            'x-api-key': apiKey
-          }
-        });
+        const res = await fetch(url, { headers });
 
-        if (!res.ok) throw new Error('Fallo al conectar con la API oficial');
+        if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
 
         const data = await res.json();
         if (Array.isArray(data)) {
           setRazas(data);
         }
       } catch (error) {
-        console.error('Error al consumir la API:', error);
+        console.error('Error al cargar razas:', error);
+        setRazas([]);
       } finally {
         setLoading(false);
       }
@@ -49,11 +51,14 @@ export default function AnimalSearch() {
     cargarRazasOficiales();
   }, [tipo]);
 
-  // Obtener el detalle completo y la imagen oficial de la raza seleccionada
+  // Obtener el detalle y la imagen oficial garantizando compatibilidad total
   const obtenerDetalle = async () => {
     if (!breedId) return;
     setLoading(true);
     setDetalle(null);
+
+    // Ubicamos primero la raza en nuestro arreglo local para asegurar datos inmediatos
+    const razaSeleccionada = razas.find((r) => r.id === breedId);
 
     try {
       const url = tipo === 'cats'
@@ -61,30 +66,38 @@ export default function AnimalSearch() {
         : `https://api.thedogapi.com/v1/images/search?breed_ids=${breedId}`;
 
       const apiKey = tipo === 'cats' ? CAT_API_KEY : DOG_API_KEY;
+      const headers: HeadersInit = {};
+      if (apiKey) {
+        headers['x-api-key'] = apiKey;
+      }
 
-      const res = await fetch(url, {
-        headers: {
-          'x-api-key': apiKey
-        }
-      });
-
-      if (!res.ok) throw new Error('Error al obtener detalle de la API');
+      const res = await fetch(url, { headers });
+      
+      if (!res.ok) throw new Error('Error al consultar imagen');
 
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        setDetalle(data[0]);
-      } else {
-        // Fallback dinámico si el endpoint de imagen viene vacío pero tenemos la raza en la lista
-        const razaLocal = razas.find((r) => r.id === breedId);
-        if (razaLocal) {
-          setDetalle({
-            url: razaLocal.image?.url || '',
-            breeds: [razaLocal]
-          });
-        }
+
+      if (Array.isArray(data) && data.length > 0 && data[0].url) {
+        // Si la API devuelve la imagen correctamente con su objeto de raza
+        setDetalle({
+          url: data[0].url,
+          breeds: data[0].breeds && data[0].breeds.length > 0 ? data[0].breeds : [razaSeleccionada]
+        });
+      } else if (razaSeleccionada) {
+        // Respaldo inteligente: si el endpoint de imagen viene vacío, usamos los datos de la raza directamente
+        setDetalle({
+          url: razaSeleccionada.image?.url || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1',
+          breeds: [razaSeleccionada]
+        });
       }
     } catch (error) {
-      console.error('Error al obtener la información:', error);
+      // Respaldo de emergencia en caso de caída de red
+      if (razaSeleccionada) {
+        setDetalle({
+          url: razaSeleccionada.image?.url || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1',
+          breeds: [razaSeleccionada]
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -134,7 +147,7 @@ export default function AnimalSearch() {
         </button>
       </div>
 
-      {/* Tarjeta de resultados basada en la respuesta de la API */}
+      {/* Tarjeta de resultados */}
       {detalle && (
         <div className="border border-gray-200 rounded-xl p-5 bg-gray-50 flex flex-col md:flex-row gap-6 items-center">
           {detalle.url && (
@@ -150,7 +163,7 @@ export default function AnimalSearch() {
             </h3>
             <p><strong>Temperamento:</strong> {detalle.breeds?.[0]?.temperament || 'No especificado'}</p>
             <p><strong>Origen:</strong> {detalle.breeds?.[0]?.origin || 'Desconocido'}</p>
-            <p><strong>Esperanza de vida:</strong> {detalle.breeds?.[0]?.life_span ? `${detalle.breeds[0].life_span}` : 'N/A'}</p>
+            <p><strong>Esperanza de vida:</strong> {detalle.breeds?.[0]?.life_span || 'N/A'}</p>
           </div>
         </div>
       )}
