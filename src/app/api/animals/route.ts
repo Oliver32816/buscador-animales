@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
-const DOG_API_KEY = 'live_aded9hc0tAHDb0EQnuVzz5JNR4MkfFsyr6dADgGtkTxJ3k36wTZ7DqlVCgkHRLS1'; // Tu llave de The Dog API
-const CAT_API_KEY = 'live_aded9hc0tAHDb0EQnuVzz5JNR4MkfFsyr6dADgGtkTxJ3k36wTZ7DqlVCgkHRLS1; // Tu llave de The Cat API (puedes usar la misma si te sirve, o dejarla abierta con cabecera estándar)
+const DOG_API_KEY = 'live_aded9hc0tAhDB0EqnuVz5JNR4Mkffsyr6dADgGtKxJ3k36wTZ7dQlVCgkHRLS1';
+const CAT_API_KEY = 'live_aded9hc0tAhDB0EqnuVz5JNR4Mkffsyr6dADgGtKxJ3k36wTZ7dQlVCgkHRLS1';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
