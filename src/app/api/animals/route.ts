@@ -7,13 +7,14 @@ export async function GET(request: Request) {
 
   try {
     if (breedId) {
-      // Petición para detalle de una raza
+      // Petición para obtener la imagen y detalles de una raza específica
       const url = tipo === 'cats'
         ? `https://api.thecatapi.com/v1/images/search?breed_ids=${breedId}`
         : `https://api.thedogapi.com/v1/images/search?breed_ids=${breedId}`;
       
-      const res = await fetch(url);
-      const data = await res.json();
+      const respuestaExterna = await fetch(url);
+      if (!respuestaExterna.ok) throw new Error('Error al conectar con la API externa de detalle');
+      const data = await respuestaExterna.json();
       return NextResponse.json(data);
     } else {
       // Petición para listar todas las razas
@@ -21,11 +22,15 @@ export async function GET(request: Request) {
         ? 'https://api.thecatapi.com/v1/breeds'
         : 'https://api.thedogapi.com/v1/breeds';
       
-      const res = await fetch(url);
-      const data = await res.json();
-      return NextResponse.json(data);
+      const respuestaExterna = await fetch(url);
+      if (!respuestaExterna.ok) throw new Error('Error al conectar con la API externa de razas');
+      const data = await respuestaExterna.json();
+      
+      // Aseguramos que siempre regrese un arreglo JSON plano
+      return NextResponse.json(Array.isArray(data) ? data : []);
     }
   } catch (error) {
-    return NextResponse.json({ error: 'Error al conectar con la API externa' }, { status: 500 });
+    console.error('Error en /api/animals:', error);
+    return NextResponse.json({ error: 'Error interno en el servidor proxy' }, { status: 500 });
   }
 }
