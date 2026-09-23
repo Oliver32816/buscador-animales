@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { obtenerRazas, obtenerDetalleAnimal, AnimalBreed, AnimalImageResponse } from '@/services/animalApi';
+import { obtenerRazas, obtenerDetalleAnimal, AnimalBreed, AnimalImageResponse } from '../services/animalApi';
 
 export default function AnimalSearch() {
   const [tipo, setTipo] = useState<'dogs' | 'cats'>('dogs');
