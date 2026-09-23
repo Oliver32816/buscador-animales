@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 
+const DOG_API_KEY = 'live_aded9hc0tAhDB0EqnuVz5JNR4Mkffsyr6dADgGtKxJ3k36wTZ7dQlVCgkHRLS1';
+const CAT_API_KEY = 'live_aded9hc0tAhDB0EqnuVz5JNR4Mkffsyr6dADgGtKxJ3k36wTZ7dQlVCgkHRLS1';
+
 export default function AnimalSearch() {
   const [tipo, setTipo] = useState<'dogs' | 'cats'>('dogs');
   const [razas, setRazas] = useState<any[]>([]);
@@ -9,6 +12,7 @@ export default function AnimalSearch() {
   const [detalle, setDetalle] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
+  // Cargar razas directamente desde el navegador del cliente
   useEffect(() => {
     async function cargarRazas() {
       setLoading(true);
@@ -17,18 +21,24 @@ export default function AnimalSearch() {
       setDetalle(null);
 
       try {
-        console.log(`[CLIENTE] Solicitando razas para: ${tipo}`);
-        const res = await fetch(`/api/animals?tipo=${tipo}`);
-        
-        if (!res.ok) {
-          throw new Error(`Error HTTP: ${res.status}`);
-        }
+        const url = tipo === 'cats'
+          ? 'https://api.thecatapi.com/v1/breeds'
+          : 'https://api.thedogapi.com/v1/breeds';
+
+        const apiKey = tipo === 'cats' ? CAT_API_KEY : DOG_API_KEY;
+
+        const res = await fetch(url, {
+          headers: {
+            'x-api-key': apiKey
+          }
+        });
+
+        if (!res.ok) throw new Error('Error al conectar con la API oficial');
 
         const data = await res.json();
-        console.log(`[CLIENTE] Razas recibidas exitosamente:`, data.length);
         setRazas(Array.isArray(data) ? data : []);
       } catch (error) {
-        console.error('[CLIENTE ERROR] Fallo al cargar razas:', error);
+        console.error('Error al cargar razas:', error);
       } finally {
         setLoading(false);
       }
@@ -37,15 +47,27 @@ export default function AnimalSearch() {
     cargarRazas();
   }, [tipo]);
 
+  // Obtener detalle de la raza seleccionada
   const obtenerDetalle = async () => {
     if (!breedId) return;
     setLoading(true);
     setDetalle(null);
 
     try {
-      const res = await fetch(`/api/animals?tipo=${tipo}&breedId=${breedId}`);
+      const url = tipo === 'cats'
+        ? `https://api.thecatapi.com/v1/images/search?breed_ids=${breedId}`
+        : `https://api.thedogapi.com/v1/images/search?breed_ids=${breedId}`;
+
+      const apiKey = tipo === 'cats' ? CAT_API_KEY : DOG_API_KEY;
+
+      const res = await fetch(url, {
+        headers: {
+          'x-api-key': apiKey
+        }
+      });
+
       if (!res.ok) throw new Error('Error al obtener los detalles');
-      
+
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
         setDetalle(data[0]);
@@ -61,6 +83,7 @@ export default function AnimalSearch() {
     <div className="max-w-2xl mx-auto p-6 bg-white rounded-xl shadow-lg mt-10">
       <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Buscador Oficial de Mascotas</h2>
       
+      {/* Selector de Tipo */}
       <div className="flex justify-center gap-4 mb-6">
         <button
           onClick={() => setTipo('dogs')}
@@ -76,6 +99,7 @@ export default function AnimalSearch() {
         </button>
       </div>
 
+      {/* Menú Desplegable */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <select
           value={breedId}
@@ -99,6 +123,7 @@ export default function AnimalSearch() {
         </button>
       </div>
 
+      {/* Visualización de Resultados */}
       {detalle && (
         <div className="border border-gray-200 rounded-xl p-5 bg-gray-50 flex flex-col md:flex-row gap-6 items-center">
           {detalle.url && (
